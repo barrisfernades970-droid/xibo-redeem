@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>兑换码领取工具</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* 登录页面样式 */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 40px);
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .login-card h2 {
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .login-card p {
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .login-card input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .login-card .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+    }
+
+    .main-content {
+      display: none;
+    }
+
+    .main-content.show {
+      display: block;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+    }
+
+    .logout-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #f8f9fa;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e9ecef;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+    .claim-section {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .claim-btn {
+      font-size: 20px;
+      padding: 16px 48px;
+    }
+
+    .claim-result {
+      margin-top: 24px;
+      text-align: left;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .result-item.empty {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .result-type {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .result-code {
+      font-family: 'Courier New', monospace;
+      background: #e9ecef;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .copy-all-btn {
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    .types-list {
+      margin-top: 16px;
+    }
+
+    .type-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .type-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .type-name {
+      font-weight: 500;
+    }
+
+    .type-count {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .type-count .available {
+      color: #28a745;
+      font-weight: 600;
+    }
+
+    .type-count .used {
+      color: #999;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .form-group textarea {
+      min-height: 120px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: #f8f9fa;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .tab:hover:not(.active) {
+      background: #e9ecef;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .records-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .records-table th,
+    .records-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .records-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .records-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background: #333;
+      color: white;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.success {
+      background: #28a745;
+    }
+
+    .toast.error {
+      background: #dc3545;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty-state p {
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        flex-direction: column;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 登录页面 -->
+  <div class="login-container" id="loginPage">
+    <div class="login-card">
+      <h2>兑换码领取工具</h2>
+      <p>喜播学堂 · 请输入访问密码</p>
+      <input type="password" id="passwordInput" placeholder="请输入密码" onkeypress="if(event.key==='Enter')login()">
+      <button class="btn btn-primary" onclick="login()">登录</button>
+    </div>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="main-content" id="mainContent">
+    <div class="container">
+      <div class="header">
+        <button class="logout-btn" onclick="logout()">退出登录</button>
+        <h1>兑换码领取工具</h1>
+        <p>喜播学堂 · 快速领取兑换码</p>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="card">
+        <div class="card-title">📊 数据统计</div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="totalCodes">0</div>
+            <div class="stat-label">总兑换码</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="availableCodes">0</div>
+            <div class="stat-label">可领取</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="usedCodes">0</div>
+            <div class="stat-label">已领取</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="totalClaims">0</div>
+            <div class="stat-label">领取次数</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 标签页 -->
+      <div class="card">
+        <div class="tabs">
+          <button class="tab active" data-tab="claim">领取兑换码</button>
+          <button class="tab" data-tab="manage">管理兑换码</button>
+          <button class="tab" data-tab="records">领取记录</button>
+        </div>
+
+        <!-- 领取兑换码 -->
+        <div class="tab-content active" id="claim-tab">
+          <div class="claim-section">
+            <button class="btn btn-primary claim-btn" id="claimBtn" onclick="claimAll()">
+              🎁 一键领取全部
+            </button>
+            <p style="margin-top: 12px; color: #666; font-size: 14px;">
+              点击后将从每种类型中领取一个兑换码
+            </p>
+          </div>
+
+          <div class="claim-result" id="claimResult" style="display: none;">
+            <div class="card-title">本次领取结果</div>
+            <div id="resultList"></div>
+            <button class="btn btn-secondary copy-all-btn" onclick="copyAll()">
+              📋 一键复制全部
+            </button>
+          </div>
+        </div>
+
+        <!-- 管理兑换码 -->
+        <div class="tab-content" id="manage-tab">
+          <div class="form-group">
+            <label>添加兑换码类型</label>
+            <div class="form-row">
+              <input type="text" id="newTypeName" placeholder="例如：课程A码、会员码...">
+              <button class="btn btn-primary btn-sm" onclick="addType()">添加</button>
+            </div>
+          </div>
+
+          <div class="types-list" id="typesList">
+            <!-- 动态生成 -->
+          </div>
+
+          <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;">
+
+          <div class="card-title">导入兑换码</div>
+          <div class="form-group">
+            <label>选择类型</label>
+            <select id="importType">
+              <option value="">请选择兑换码类型</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>兑换码列表（每行一个）</label>
+            <textarea id="importCodes" placeholder="ABC123&#10;DEF456&#10;GHI789&#10;..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="importCodes()">导入兑换码</button>
+        </div>
+
+        <!-- 领取记录 -->
+        <div class="tab-content" id="records-tab">
+          <div id="recordsList">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = '/api';
+    let token = localStorage.getItem('token');
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // 带认证的 fetch
+    async function authFetch(url, options = {}) {
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+      };
+      return fetch(url, options);
+    }
+
+    // 检查登录状态
+    async function checkAuth() {
+      if (!token) {
+        showLogin();
+        return false;
+      }
+      
+      try {
+        const res = await authFetch(`${API_BASE}/check`);
+        const data = await res.json();
+        if (data.success && data.data.loggedIn) {
+          showMain();
+          return true;
+        } else {
+          localStorage.removeItem('token');
+          token = null;
+          showLogin();
+          return false;
+        }
+      } catch (e) {
+        showLogin();
+        return false;
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('mainContent').classList.remove('show');
+    }
+
+    function showMain() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('mainContent').classList.add('show');
+      loadStats();
+      loadTypes();
+    }
+
+    // 登录
+    async function login() {
+      const password = document.getElementById('passwordInput').value;
+      if (!password) {
+        showToast('请输入密码', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          token = data.data.token;
+          localStorage.setItem('token', token);
+          showMain();
+          showToast('登录成功');
+        } else {
+          showToast(data.error || '密码错误', 'error');
+        }
+      } catch (e) {
+        showToast('登录失败', 'error');
+      }
+    }
+
+    // 退出登录
+    function logout() {
+      localStorage.removeItem('token');
+      token = null;
+      showLogin();
+      showToast('已退出登录');
+    }
+
+    // 加载统计数据
+    async function loadStats() {
+      try {
+        const res = await authFetch(`${API_BASE}/stats`);
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('totalCodes').textContent = data.data.totalCodes;
+          document.getElementById('availableCodes').textContent = data.data.availableCodes;
+          document.getElementById('usedCodes').textContent = data.data.usedCodes;
+          document.getElementById('totalClaims').textContent = data.data.totalClaims;
+        } else if (data.error === '请先登录') {
+          showLogin();
+        }
+      } catch (error) {
+        console.error('加载统计失败:', error);
+      }
+    }
+
+    // 加载兑换码类型
+    async function loadTypes() {
+      try {
+        const res = await authFetch(`${API_BASE}/types`);
+        const data = await res.json();
+        
+        if (data.success) {
+          renderTypesList(data.data);
+          renderTypeSelect(data.data);
+        } else if (data.error === '请先登录') {
+          showLogin();
+        }
+      } catch (error) {
+        console.error('加载类型失败:', error);
+      }
+    }
+
+    // 渲染类型列表
+    function renderTypesList(types) {
+      const container = document.getElementById('typesList');
+      
+      if (types.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>还没有添加兑换码类型</p>
+            <p style="font-size: 14px;">在上方输入类型名称并点击"添加"</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = types.map(type => `
+        <div class="type-item">
+          <div class="type-info">
+            <span class="type-name">${type.name}</span>
+            <span class="type-count">
+              <span class="available">${type.available_count}</span> 可用 / 
+              <span class="used">${type.used_count}</span> 已用
+            </span>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="deleteType(${type.id}, '${type.name}')">删除</button>
+        </div>
+      `).join('');
+    }
+
+    // 渲染类型选择框
+    function renderTypeSelect(types) {
+      const select = document.getElementById('importType');
+      select.innerHTML = '<option value="">请选择兑换码类型</option>' +
+        types.map(type => `<option value="${type.id}">${type.name} (${type.available_count} 可用)</option>`).join('');
+    }
+
+    // 添加类型
+    async function addType() {
+      const name = document.getElementById('newTypeName').value.trim();
+      if (!name) {
+        showToast('请输入类型名称', 'error');
+        return;
+      }
+
+      try {
+        const res = await authFetch(`${API_BASE}/types`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('添加成功');
+          document.getElementById('newTypeName').value = '';
+          loadTypes();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (error) {
+        showToast('添加失败', 'error');
+      }
+    }
+
+    // 删除类型
+    async function deleteType(id, name) {
+      if (!confirm(`确定要删除"${name}"吗？\n该类型下的所有兑换码也会被删除！`)) {
+        return;
+      }
+
+      try {
+        const res = await authFetch(`${API_BASE}/types/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('删除成功');
+          loadTypes();
+          loadStats();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (error) {
+        showToast('删除失败', 'error');
+      }
+    }
+
+    // 导入兑换码
+    async function importCodes() {
+      const typeId = document.getElementById('importType').value;
+      const codesText = document.getElementById('importCodes').value;
+
+      if (!typeId) {
+        showToast('请选择兑换码类型', 'error');
+        return;
+      }
+
+      const codes = codesText.split('\n').filter(c => c.trim());
+      if (codes.length === 0) {
+        showToast('请输入兑换码', 'error');
+        return;
+      }
+
+      try {
+        const res = await authFetch(`${API_BASE}/codes/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type_id: parseInt(typeId), codes })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(data.data.message);
+          document.getElementById('importCodes').value = '';
+          loadTypes();
+          loadStats();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (error) {
+        showToast('导入失败', 'error');
+      }
+    }
+
+    // 一键领取
+    let lastClaimResult = [];
+    
+    async function claimAll() {
+      const btn = document.getElementById('claimBtn');
+      btn.disabled = true;
+      btn.textContent = '领取中...';
+
+      try {
+        const res = await authFetch(`${API_BASE}/claim`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ claimer: '管理员' })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          lastClaimResult = data.data;
+          renderClaimResult(data.data);
+          showToast('领取成功');
+          loadTypes();
+          loadStats();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (error) {
+        showToast('领取失败', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🎁 一键领取全部';
+      }
+    }
+
+    // 渲染领取结果
+    function renderClaimResult(results) {
+      const container = document.getElementById('claimResult');
+      const list = document.getElementById('resultList');
+      
+      container.style.display = 'block';
+      
+      list.innerHTML = results.map(item => {
+        if (item.code) {
+          return `
+            <div class="result-item">
+              <span class="result-type">${item.type_name}</span>
+              <span class="result-code">${item.code}</span>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="result-item empty">
+              <span class="result-type">${item.type_name}</span>
+              <span>${item.message}</span>
+            </div>
+          `;
+        }
+      }).join('');
+    }
+
+    // 一键复制
+    function copyAll() {
+      const validResults = lastClaimResult.filter(r => r.code);
+      if (validResults.length === 0) {
+        showToast('没有可复制的兑换码', 'error');
+        return;
+      }
+
+      const text = validResults.map(r => `${r.type_name}：${r.code}`).join('\n');
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已复制到剪贴板');
+      }).catch(() => {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('已复制到剪贴板');
+      });
+    }
+
+    // 加载领取记录
+    async function loadRecords() {
+      try {
+        const res = await authFetch(`${API_BASE}/records`);
+        const data = await res.json();
+        
+        if (data.success) {
+          renderRecords(data.data.records);
+        }
+      } catch (error) {
+        console.error('加载记录失败:', error);
+      }
+    }
+
+    // 渲染领取记录
+    function renderRecords(records) {
+      const container = document.getElementById('recordsList');
+      
+      if (records.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>还没有领取记录</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="records-table">
+          <thead>
+            <tr>
+              <th>兑换码类型</th>
+              <th>兑换码</th>
+              <th>领取人</th>
+              <th>领取时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${records.map(r => `
+              <tr>
+                <td>${r.typeName}</td>
+                <td><code>${r.code}</code></td>
+                <td>${r.claimer}</td>
+                <td>${new Date(r.claimedAt).toLocaleString('zh-CN')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // 标签页切换
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+        
+        if (tab.dataset.tab === 'records') {
+          loadRecords();
+        }
+      });
+    });
+
+    // 初始化
+    checkAuth();
+  </script>
+</body>
+</html>

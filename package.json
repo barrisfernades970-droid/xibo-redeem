@@ -1,0 +1,15 @@
+{
+  "name": "code-claim-tool",
+  "version": "1.0.0",
+  "description": "兑换码一键领取工具",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "lowdb": "^7.0.1",
+    "cors": "^2.8.5"
+  }
+}
