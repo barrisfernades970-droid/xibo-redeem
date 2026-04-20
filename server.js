@@ -7,19 +7,19 @@ const { db, initDB } = require('./database');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 密码配置（从环境变量读取，默认密码：xibo2024）
-const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || 'xibo2024';
+// 密码配置
+const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || 'xibo888888';  // 普通密码
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'xiboadmin';     // 管理员密码
 const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
 
-// 简单的 token 存储
-const tokens = new Set();
+// token 存储（区分普通用户和管理员）
+const tokens = new Map(); // token -> { isAdmin: boolean }
 
 app.use(cors());
 app.use(express.json());
 
 // 验证 token 中间件
 function authMiddleware(req, res, next) {
-  // 登录和检查接口不需要验证
   if (req.path === '/login' || req.path === '/check' || req.path === '/logout') {
     return next();
   }
@@ -30,6 +30,25 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ success: false, error: '请先登录' });
   }
   
+  // 将用户信息附加到请求对象
+  req.user = tokens.get(token);
+  next();
+}
+
+// 管理员权限中间件
+function adminMiddleware(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token || !tokens.has(token)) {
+    return res.status(401).json({ success: false, error: '请先登录' });
+  }
+  
+  const user = tokens.get(token);
+  if (!user.isAdmin) {
+    return res.status(403).json({ success: false, error: '需要管理员权限' });
+  }
+  
+  req.user = user;
   next();
 }
 
@@ -40,26 +59,41 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
   
+  // 检查是否是管理员密码
+  if (password === ADMIN_PASSWORD) {
+    const token = crypto.createHash('sha256').update(password + TOKEN_SECRET + Date.now()).digest('hex');
+    tokens.set(token, { isAdmin: true });
+    cleanupTokens();
+    return res.json({ success: true, data: { token, isAdmin: true } });
+  }
+  
+  // 检查是否是普通密码
   if (password === ACCESS_PASSWORD) {
     const token = crypto.createHash('sha256').update(password + TOKEN_SECRET + Date.now()).digest('hex');
-    tokens.add(token);
-    
-    // 限制 token 数量，防止内存泄漏
-    if (tokens.size > 1000) {
-      const arr = Array.from(tokens);
-      arr.slice(0, 500).forEach(t => tokens.delete(t));
-    }
-    
-    res.json({ success: true, data: { token } });
-  } else {
-    res.status(401).json({ success: false, error: '密码错误' });
+    tokens.set(token, { isAdmin: false });
+    cleanupTokens();
+    return res.json({ success: true, data: { token, isAdmin: false } });
   }
+  
+  res.status(401).json({ success: false, error: '密码错误' });
 });
+
+// 清理过多的token
+function cleanupTokens() {
+  if (tokens.size > 1000) {
+    const arr = Array.from(tokens.keys());
+    arr.slice(0, 500).forEach(t => tokens.delete(t));
+  }
+}
 
 // 检查登录状态
 app.get('/api/check', (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  res.json({ success: true, data: { loggedIn: tokens.has(token) } });
+  if (token && tokens.has(token)) {
+    const user = tokens.get(token);
+    return res.json({ success: true, data: { loggedIn: true, isAdmin: user.isAdmin } });
+  }
+  res.json({ success: true, data: { loggedIn: false, isAdmin: false } });
 });
 
 // 退出登录
@@ -74,7 +108,7 @@ app.post('/api/logout', (req, res) => {
 // 以下接口需要登录
 app.use('/api', authMiddleware);
 
-// 获取所有兑换码类型及剩余数量
+// 获取所有兑换码类型及剩余数量（普通用户可访问）
 app.get('/api/types', async (req, res) => {
   try {
     await db.read();
@@ -95,8 +129,8 @@ app.get('/api/types', async (req, res) => {
   }
 });
 
-// 添加兑换码类型
-app.post('/api/types', async (req, res) => {
+// 添加兑换码类型（需要管理员权限）
+app.post('/api/types', adminMiddleware, async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {
@@ -119,8 +153,8 @@ app.post('/api/types', async (req, res) => {
   }
 });
 
-// 删除兑换码类型
-app.delete('/api/types/:id', async (req, res) => {
+// 删除兑换码类型（需要管理员权限）
+app.delete('/api/types/:id', adminMiddleware, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     
@@ -137,8 +171,8 @@ app.delete('/api/types/:id', async (req, res) => {
   }
 });
 
-// 批量导入兑换码
-app.post('/api/codes/import', async (req, res) => {
+// 批量导入兑换码（需要管理员权限）
+app.post('/api/codes/import', adminMiddleware, async (req, res) => {
   try {
     const { type_id, codes } = req.body;
     
@@ -190,7 +224,7 @@ app.post('/api/codes/import', async (req, res) => {
   }
 });
 
-// 一键领取所有类型的兑换码
+// 一键领取所有类型的兑换码（普通用户可访问）
 app.post('/api/claim', async (req, res) => {
   try {
     const { claimer = '管理员' } = req.body;
@@ -241,7 +275,53 @@ app.post('/api/claim', async (req, res) => {
   }
 });
 
-// 获取领取记录
+// 单独领取某种类型的兑换码（普通用户可访问）
+app.post('/api/claim/:typeId', async (req, res) => {
+  try {
+    const typeId = parseInt(req.params.typeId);
+    const { claimer = '管理员' } = req.body;
+    
+    await db.read();
+    
+    const type = db.data.types.find(t => t.id === typeId);
+    if (!type) {
+      return res.status(400).json({ success: false, error: '兑换码类型不存在' });
+    }
+
+    const codeIndex = db.data.codes.findIndex(c => c.typeId === typeId && c.status === 'available');
+
+    if (codeIndex === -1) {
+      return res.status(400).json({ success: false, error: '该类型已无可用兑换码' });
+    }
+
+    const code = db.data.codes[codeIndex];
+    
+    db.data.codes[codeIndex].status = 'used';
+    
+    db.data.records.push({
+      id: Date.now() + Math.random(),
+      codeId: code.id,
+      code: code.code,
+      typeName: type.name,
+      claimer,
+      claimedAt: new Date().toISOString()
+    });
+
+    await db.write();
+
+    res.json({ 
+      success: true, 
+      data: {
+        type_name: type.name,
+        code: code.code
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 获取领取记录（普通用户可访问）
 app.get('/api/records', async (req, res) => {
   try {
     await db.read();
@@ -260,7 +340,7 @@ app.get('/api/records', async (req, res) => {
   }
 });
 
-// 获取统计数据
+// 获取统计数据（普通用户可访问）
 app.get('/api/stats', async (req, res) => {
   try {
     await db.read();
@@ -292,7 +372,8 @@ async function start() {
     console.log(`\n========================================`);
     console.log(`  兑换码领取工具已启动`);
     console.log(`  访问地址: http://localhost:${PORT}`);
-    console.log(`  默认密码: ${ACCESS_PASSWORD}`);
+    console.log(`  普通密码: ${ACCESS_PASSWORD}`);
+    console.log(`  管理员密码: ${ADMIN_PASSWORD}`);
     console.log(`========================================\n`);
   });
 }
