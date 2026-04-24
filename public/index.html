@@ -683,6 +683,8 @@
     let token = localStorage.getItem('token');
     let isAdmin = localStorage.getItem('isAdmin') === 'true';
     let userName = localStorage.getItem('userName') || '';
+    let needCopy = false; // 标记是否需要先复制
+    let lastClaimResult = []; // 上次领取的结果
 
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
