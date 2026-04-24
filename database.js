@@ -1,10 +1,6 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-// 调试：打印环境变量状态
-console.log('SUPABASE_URL:', SUPABASE_URL ? '已设置' : '未设置');
-console.log('SUPABASE_KEY:', SUPABASE_KEY ? '已设置' : '未设置');
-
 // Supabase REST API 封装
 async function supabaseRequest(table, method = 'GET', data = null, query = '') {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -110,14 +106,17 @@ const dbOperations = {
   
   // 获取统计
   async getStats() {
-    const codes = await supabaseRequest('codes', 'GET', null, '?select=status');
-    const records = await supabaseRequest('records', 'GET', null, '?select=id');
+    // 使用 count 查询避免默认 1000 行限制
+    const totalResult = await supabaseRequest('codes', 'GET', null, '?select=count');
+    const availableResult = await supabaseRequest('codes', 'GET', null, '?select=count&status=eq.available');
+    const usedResult = await supabaseRequest('codes', 'GET', null, '?select=count&status=eq.used');
+    const recordsResult = await supabaseRequest('records', 'GET', null, '?select=count');
     
     return {
-      totalCodes: codes.length,
-      availableCodes: codes.filter(c => c.status === 'available').length,
-      usedCodes: codes.filter(c => c.status === 'used').length,
-      totalClaims: records.length
+      totalCodes: totalResult[0]?.count || 0,
+      availableCodes: availableResult[0]?.count || 0,
+      usedCodes: usedResult[0]?.count || 0,
+      totalClaims: recordsResult[0]?.count || 0
     };
   }
 };
