@@ -2,7 +2,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 // Supabase REST API 封装
-async function supabaseRequest(table, method = 'GET', data = null, query = '') {
+async function supabaseRequest(table, method = 'GET', data = null, query = '', preferCount = false) {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   
   const options = {
@@ -11,7 +11,7 @@ async function supabaseRequest(table, method = 'GET', data = null, query = '') {
       'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+      'Prefer': method === 'POST' ? 'return=representation' : (preferCount ? 'count=exact' : 'return=minimal')
     }
   };
   
@@ -27,6 +27,17 @@ async function supabaseRequest(table, method = 'GET', data = null, query = '') {
   }
   
   if (method === 'GET') {
+    if (preferCount) {
+      // 从 content-range header 解析总数
+      const contentRange = response.headers.get('content-range');
+      if (contentRange) {
+        const total = contentRange.split('/')[1];
+        return parseInt(total) || 0;
+      }
+      // 如果没有 content-range，返回数组长度
+      const data = await response.json();
+      return data.length;
+    }
     return await response.json();
   }
   
@@ -106,17 +117,17 @@ const dbOperations = {
   
   // 获取统计
   async getStats() {
-    // 使用 count 查询避免默认 1000 行限制
-    const totalResult = await supabaseRequest('codes', 'GET', null, '?select=count');
-    const availableResult = await supabaseRequest('codes', 'GET', null, '?select=count&status=eq.available');
-    const usedResult = await supabaseRequest('codes', 'GET', null, '?select=count&status=eq.used');
-    const recordsResult = await supabaseRequest('records', 'GET', null, '?select=count');
+    // 使用 Prefer: count=exact 获取准确计数
+    const totalCodes = await supabaseRequest('codes', 'GET', null, '?select=id', true);
+    const availableCodes = await supabaseRequest('codes', 'GET', null, '?select=id&status=eq.available', true);
+    const usedCodes = await supabaseRequest('codes', 'GET', null, '?select=id&status=eq.used', true);
+    const totalClaims = await supabaseRequest('records', 'GET', null, '?select=id', true);
     
     return {
-      totalCodes: totalResult[0]?.count || 0,
-      availableCodes: availableResult[0]?.count || 0,
-      usedCodes: usedResult[0]?.count || 0,
-      totalClaims: recordsResult[0]?.count || 0
+      totalCodes,
+      availableCodes,
+      usedCodes,
+      totalClaims
     };
   }
 };
