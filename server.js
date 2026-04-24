@@ -174,6 +174,7 @@ app.post('/api/codes/import', adminMiddleware, async (req, res) => {
     let imported = 0;
     let duplicated = 0;
     const codesToInsert = [];
+    let idCounter = Date.now();
 
     for (const code of codes) {
       const trimmed = code.trim();
@@ -183,7 +184,7 @@ app.post('/api/codes/import', adminMiddleware, async (req, res) => {
           duplicated++;
         } else {
           codesToInsert.push({
-            id: Date.now() + Math.random(),
+            id: idCounter++,
             typeId: parseInt(type_id),
             code: trimmed,
             status: 'available',
