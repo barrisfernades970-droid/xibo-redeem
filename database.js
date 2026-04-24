@@ -1,5 +1,5 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://owgzjtgwwhlsqrwwldbn.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || 'sb_publishable_kdL3or733TihS2H8tTc11A_XgF4ZMi2';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
 // Supabase REST API 封装
 async function supabaseRequest(table, method = 'GET', data = null, query = '') {
