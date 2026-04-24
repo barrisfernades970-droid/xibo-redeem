@@ -230,8 +230,8 @@ app.post('/api/claim', async (req, res) => {
         await db.updateCodeStatus(code.id, 'used');
         
         await db.insertRecord({
-          id: Date.now() + Math.random(),
-          codeId: code.id,
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          codeId: Math.floor(code.id),
           code: code.code,
           typeName: type.name,
           claimer,
@@ -277,8 +277,8 @@ app.post('/api/claim/:typeId', async (req, res) => {
     await db.updateCodeStatus(code.id, 'used');
     
     await db.insertRecord({
-      id: Date.now() + Math.random(),
-      codeId: code.id,
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      codeId: Math.floor(code.id),
       code: code.code,
       typeName: type.name,
       claimer,
