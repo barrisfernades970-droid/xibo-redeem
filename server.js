@@ -2,6 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
+
+// 调试：打印环境变量
+console.log('Server启动 - SUPABASE_URL:', process.env.SUPABASE_URL);
+console.log('Server启动 - SUPABASE_KEY:', process.env.SUPABASE_KEY ? '已设置' : '未设置');
+
 const { db, initDB } = require('./database');
 
 const app = express();
