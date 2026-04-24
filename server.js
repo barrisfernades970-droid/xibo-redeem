@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 密码配置
-const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || 'xibo888888';
+const ACCESS_PASSWORD = process.env.ACCESS_PASSWORD || 'xibo888';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'xiboadmin';
 const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
 
