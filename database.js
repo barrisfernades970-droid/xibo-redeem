@@ -1,6 +1,10 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
+// 调试：打印环境变量状态
+console.log('SUPABASE_URL:', SUPABASE_URL ? '已设置' : '未设置');
+console.log('SUPABASE_KEY:', SUPABASE_KEY ? '已设置' : '未设置');
+
 // Supabase REST API 封装
 async function supabaseRequest(table, method = 'GET', data = null, query = '') {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
