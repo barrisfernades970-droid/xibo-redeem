@@ -596,18 +596,7 @@
 
         <!-- 领取兑换码 -->
         <div class="tab-content active" id="claim-tab">
-          <div class="claim-section" id="claimAllSection">
-            <button class="btn btn-primary claim-btn" id="claimBtn" onclick="claimAll()">
-              🎁 一键领取全部
-            </button>
-            <p style="margin-top: 12px; color: #666; font-size: 14px;">
-              点击后将从每种类型中领取一个兑换码
-            </p>
-          </div>
-
-          <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;">
-
-          <div class="card-title">📋 选择性领取</div>
+          <div class="card-title">📋 领取兑换码</div>
           <p style="color: #666; font-size: 14px; margin-bottom: 16px;">点击领取按钮，单独领取某种类型的兑换码</p>
           <div id="claimTypesList">
             <!-- 动态生成 -->
@@ -759,9 +748,6 @@
       } else {
         manageTab.classList.add('locked');
       }
-      
-      // 显示/隐藏"一键领取全部"（仅管理员可见）
-      document.getElementById('claimAllSection').style.display = isAdmin ? 'block' : 'none';
       
       // 显示用户名字
       updateUserNameDisplay();
@@ -1153,55 +1139,6 @@
         }
       } catch (error) {
         showToast('导入失败', 'error');
-      }
-    }
-
-    // 一键领取
-    let lastClaimResult = [];
-    let needCopy = false; // 是否需要先复制
-    
-    async function claimAll() {
-      // 检查是否需要先复制
-      if (needCopy) {
-        showToast('请先点击"一键复制"保存兑换码', 'error');
-        return;
-      }
-
-      // 检查是否设置了名字
-      if (!userName) {
-        showNameModal();
-        showToast('请先设置企业微信带班昵称', 'error');
-        return;
-      }
-
-      const btn = document.getElementById('claimBtn');
-      btn.disabled = true;
-      btn.textContent = '领取中...';
-
-      try {
-        const res = await authFetch(`${API_BASE}/claim`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ claimer: userName })
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-          lastClaimResult = data.data;
-          needCopy = true; // 标记需要复制
-          renderClaimResult(data.data);
-          showToast('领取成功，请点击"一键复制"保存');
-          loadTypes();
-          loadStats();
-          updateClaimButtons();
-        } else {
-          showToast(data.error, 'error');
-        }
-      } catch (error) {
-        showToast('领取失败', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '🎁 一键领取全部';
       }
     }
 
